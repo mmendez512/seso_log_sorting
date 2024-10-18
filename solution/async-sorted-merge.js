@@ -12,13 +12,13 @@ const { MinPriorityQueue } = require("@datastructures-js/priority-queue")
 module.exports = (logSources, printer) => {
   return new Promise(async (resolve, reject) => {
     try {
-      const q = new MinPriorityQueue((obj) => obj.logEntry.date);
+      const q = new MinPriorityQueue((obj) => obj.logEntry.date)
       const BATCH_SIZE = 100
 
       // Initialize the priority queue with the first log entry from each log source
       // Using Promise.all() to ensure concurency
       await Promise.all(logSources.map(async (logSource) => {
-        const next = await logSource.popAsync();
+        const next = await logSource.popAsync()
         if (next) {
           q.push({
             logEntry: next,
@@ -27,6 +27,7 @@ module.exports = (logSources, printer) => {
         }
       }))
 
+      // Used to store the results after each batch is completed 
       let res = []
 
       // Process the log entries in batches
@@ -53,11 +54,11 @@ module.exports = (logSources, printer) => {
       }
 
      // Sort the result array since we had to do batching to improve the time taken 
-     res.sort((a, b) => new Date(a.logEntry.date) - new Date(b.logEntry.date));
+     res.sort((a, b) => new Date(a.logEntry.date) - new Date(b.logEntry.date))
 
      // Print the sorted logs
      res.forEach(rec => {
-       printer.print(rec.logEntry);
+       printer.print(rec.logEntry)
      });
 
       printer.done()
