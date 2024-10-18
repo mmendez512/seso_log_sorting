@@ -17,7 +17,7 @@ const q = new MinPriorityQueue((obj) => obj.logEntry.date)
 
 // Initialize the priority queue with the first log entry from each log source
 logSources.forEach(logSource => {
-    let next = logSource.pop()
+    const next = logSource.pop()
     if (next) {
         q.push({
             logEntry: next,
@@ -32,7 +32,7 @@ while (!q.isEmpty()) {
 
     // continue to process until all logSources are exhausted
     if (logSource) {
-        let next = logSource.pop()
+        const next = logSource.pop()
         if (next) {
             q.push({
                 logEntry: next,

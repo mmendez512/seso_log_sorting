@@ -13,6 +13,8 @@ module.exports = (logSources, printer) => {
   return new Promise(async (resolve, reject) => {
     try {
       const q = new MinPriorityQueue((obj) => obj.logEntry.date)
+      
+      // Reduce the overhead of frequent asynchronous operations by batching them up
       const BATCH_SIZE = 100
 
       // Initialize the priority queue with the first log entry from each log source
