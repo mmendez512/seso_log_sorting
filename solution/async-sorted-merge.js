@@ -59,16 +59,20 @@ module.exports = (logSources, printer) => {
         if (!q.isEmpty()) {
           logEmitter.emit("processBatch");
         } else {
-          // Print the logs from the result queue in order
-          while (!resultQueue.isEmpty()) {
-            const { logEntry } = resultQueue.pop()
-            printer.print(logEntry)
-          }
-
-          printer.done();
-          resolve(console.log("Async sort complete."))
+          logEmitter.emit("done")
         }
       });
+
+      logEmitter.on("done", () => {
+            // Print the logs from the result queue in order
+            while (!resultQueue.isEmpty()) {
+              const { logEntry } = resultQueue.pop()
+              printer.print(logEntry)
+            }
+  
+            printer.done();
+            resolve(console.log("Async sort complete."))
+      })
 
       // Start processing the first batch
       logEmitter.emit("processBatch")
