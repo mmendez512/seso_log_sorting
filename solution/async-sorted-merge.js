@@ -63,6 +63,7 @@ module.exports = (logSources, printer) => {
         }
       });
 
+      // After the batch processing of all log sources, print each log entry off of the result queue
       logEmitter.on("done", () => {
             // Print the logs from the result queue in order
             while (!resultQueue.isEmpty()) {
