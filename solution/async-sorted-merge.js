@@ -51,13 +51,13 @@ module.exports = (logSources, printer) => {
             q.push({
               logEntry: next,
               logSource: logSource
-            });
+            })
           }
         }));
 
         // If the queue is not empty, emit the event to process the next batch
         if (!q.isEmpty()) {
-          logEmitter.emit("processBatch");
+          logEmitter.emit("processBatch")
         } else {
           logEmitter.emit("done")
         }
@@ -71,7 +71,7 @@ module.exports = (logSources, printer) => {
               printer.print(logEntry)
             }
   
-            printer.done();
+            printer.done()
             resolve(console.log("Async sort complete."))
       })
 
