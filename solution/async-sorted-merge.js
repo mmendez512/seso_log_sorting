@@ -1,6 +1,8 @@
 "use strict";
 
 const { MinPriorityQueue } = require("@datastructures-js/priority-queue")
+const EventEmitter = require("node:events")
+class LogEmitter extends EventEmitter {}
 
 /**
  * Prints all the entries, across all of the sources, in chronological order.
@@ -9,16 +11,17 @@ const { MinPriorityQueue } = require("@datastructures-js/priority-queue")
  * @param {Printer} printer
  *  
  */
+//class LogEmitter extends EventEmitter {}
+
 module.exports = (logSources, printer) => {
   return new Promise(async (resolve, reject) => {
     try {
       const q = new MinPriorityQueue((obj) => obj.logEntry.date)
-      
-      // Reduce the overhead of frequent asynchronous operations by batching them up
+      const resultQueue = new MinPriorityQueue((obj) => obj.logEntry.date)
+      const logEmitter = new LogEmitter()
       const BATCH_SIZE = 100
 
       // Initialize the priority queue with the first log entry from each log source
-      // Using Promise.all() to ensure concurency
       await Promise.all(logSources.map(async (logSource) => {
         const next = await logSource.popAsync()
         if (next) {
@@ -27,21 +30,19 @@ module.exports = (logSources, printer) => {
             logSource: logSource
           })
         }
-      }))
+      }));
 
-      // Used to store the results after each batch is completed 
-      let res = []
-
-      // Process the log entries in batches
-      while (!q.isEmpty()) {
-        const batch = [];
-        for (let i = 0; i < BATCH_SIZE && !q.isEmpty(); i++) {
-          const { logEntry, logSource } = q.pop()
-          batch.push({ logEntry, logSource })
+      // Event listener for processing batches
+      logEmitter.on("processBatch", async () => {
+        const batch = []
+        for (let i = 0; i < BATCH_SIZE && !q.isEmpty(); i++) { 
+          batch.push(q.pop())
         }
 
-        // Attach the batch to the result list
-        res = res.concat(batch)
+        // Add the logs in the current batch to the result queue
+        batch.forEach(({ logEntry }) => {
+          resultQueue.push({ logEntry })
+        });
 
         // Fetch the next log entries for each source in the batch
         await Promise.all(batch.map(async ({ logSource }) => {
@@ -53,21 +54,27 @@ module.exports = (logSources, printer) => {
             });
           }
         }));
-      }
 
-     // Sort the result array since we had to do batching to improve the time taken 
-     res.sort((a, b) => new Date(a.logEntry.date) - new Date(b.logEntry.date))
+        // If the queue is not empty, emit the event to process the next batch
+        if (!q.isEmpty()) {
+          logEmitter.emit("processBatch");
+        } else {
+          // Print the logs from the result queue in order
+          while (!resultQueue.isEmpty()) {
+            const { logEntry } = resultQueue.pop()
+            printer.print(logEntry)
+          }
 
-     // Print the sorted logs
-     res.forEach(rec => {
-       printer.print(rec.logEntry)
-     });
+          printer.done();
+          resolve(console.log("Async sort complete."))
+        }
+      });
 
-      printer.done()
+      // Start processing the first batch
+      logEmitter.emit("processBatch")
 
-      resolve(console.log("Async sort complete."))
     } catch (error) {
       reject(console.error("An error occurred while merging log sources:", error))
     }
-  })
+  });
 };
